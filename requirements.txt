@@ -1,1 +1,2 @@
-streamlite
+streamlit
+pandas
