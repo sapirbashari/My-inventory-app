@@ -57,12 +57,12 @@ with col3: st.image(logo2_url, width=110)
 st.write("---")
 
 # חיפוש חכם (זכוכית מגדלת באפור כהה)
-st.markdown(f"<div style='color: {color_dark_grey}; font-weight: bold;'>🔍 חיפוש פריט</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='color: {color_dark_grey}; font-weight: bold;'>🔍 חיפוש פריט במחסן</div>", unsafe_allow_html=True)
 c_s1, c_s2 = st.columns(2)
 with c_s1:
-    search_name = st.selectbox("בחרי פריט מהמלאי", ["הכל"] + sorted(df['שם פריט'].unique().tolist()), key="sb_unique_1")
+    search_name = st.selectbox("בחרי פריט מהמלאי", ["הכל"] + sorted(df['שם פריט'].unique().tolist()), key="search_box_unique")
 with c_s2:
-    search_free = st.text_input("חיפוש חופשי (מיקום/מדף)", key="ti_unique_1")
+    search_free = st.text_input("חיפוש חופשי (מדף, מעבר, קומה)", key="search_text_unique")
 
 # סינון
 filtered_df = df.copy()
@@ -71,24 +71,27 @@ if search_name != "הכל":
 if search_free:
     filtered_df = filtered_df[filtered_df.astype(str).apply(lambda x: x.str.contains(search_free, case=False)).any(axis=1)]
 
-# הוספת פריט
+# הוספת פריט (יישור ימין, פלוס כתום, סוגי נתונים)
 with st.expander("➕ הוספת פריט חדש", expanded=False):
-    with st.form("add_form_final", clear_on_submit=True):
-        n_item = st.text_input("שם הפריט", key="f_item")
+    with st.form("main_add_form", clear_on_submit=True):
+        new_item = st.text_input("שם הפריט (אותיות)", key="add_name_unique")
         c1, c2, c3 = st.columns(3)
-        with c1: n_shelf = st.text_input("מדף (אותיות)", key="f_shelf")
-        with c2: n_aisle = st.number_input("מעבר (מספרים)", step=1, format="%d", key="f_aisle")
-        with c3: n_floor = st.number_input("קומה (מספרים)", step=1, format="%d", key="f_floor")
+        with c1:
+            new_shelf = st.text_input("מדף (אותיות)", key="add_shelf_unique")
+        with c2:
+            new_aisle = st.number_input("מעבר (מספרים בלבד)", step=1, format="%d", key="add_aisle_unique")
+        with c3:
+            new_floor = st.number_input("קומה (מספרים בלבד)", step=1, format="%d", key="add_floor_unique")
         
         if st.form_submit_button("שמור במערכת"):
-            if n_item:
-                new_row = pd.DataFrame([{"שם פריט": n_item, "מדף": n_shelf, "מעבר": n_aisle, "קומה": n_floor}])
+            if new_item:
+                new_row = pd.DataFrame([{"שם פריט": new_item, "מדף": new_shelf, "מעבר": new_aisle, "קומה": new_floor}])
                 updated_df = pd.concat([df, new_row], ignore_index=True)
                 try:
                     conn.update(data=updated_df)
                     st.success("נשמר בהצלחה!")
                     st.rerun()
-                except Exception as e:
+                except Exception:
                     st.error("שגיאת הרשאה: ודאי שהגליון מוגדר כ-Editor ב-Secrets.")
 
 # הצגת טבלה
