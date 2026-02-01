@@ -6,55 +6,56 @@ import urllib.parse
 # הגדרות דף
 st.set_page_config(page_title="נוימן אלומיניום", layout="centered")
 
-# הגדרת צבעים (לפי הלוגו הכתום)
+# הגדרת צבעים
 color_orange = "#E65100" 
+color_dark_grey = "#333333" # אפור כהה לזכוכית מגדלת וטקסט
 color_light_grey = "#F2F2F2" 
-color_dark_grey = "#333333" 
 
-# עיצוב CSS - פונט Assistant, יישור לימין וצבע פלוס כתום
+# עיצוב CSS - פונט Assistant, יישור לימין מוחלט וצבעים
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700&display=swap');
     
-    /* פונט Assistant ויישור לימין לכל האפליקציה */
+    /* יישור כללי מוחלט לימין */
     html, body, [class*="css"], .stApp {{
         font-family: 'Assistant', sans-serif !important;
         direction: RTL !important;
         text-align: right !important;
     }}
-    
-    /* הפיכת הפלוס והטקסט ב-Expander לכתום */
+
+    /* דחיפת שדות הקלט והחיפוש לימין */
+    .stTextInput, .stExpander, .stDataFrame {{
+        direction: RTL !important;
+        text-align: right !important;
+    }}
+
+    /* צביעת הפלוס והטקסט ב-Expander בכתום */
     .streamlit-expanderHeader {{
         color: {color_orange} !important;
         fill: {color_orange} !important;
         font-weight: bold !important;
     }}
 
-    /* עיצוב שדות קלט אפורים */
+    /* עיצוב שדות החיפוש והזנת נתונים */
     input {{
         background-color: {color_light_grey} !important;
         color: {color_dark_grey} !important;
-        font-family: 'Assistant', sans-serif !important;
-        direction: RTL !important;
+        text-align: right !important;
+        border-radius: 8px !important;
     }}
 
     /* כפתור שמירה כתום */
     div.stButton > button {{
         background-color: {color_orange} !important;
         color: white !important;
-        font-family: 'Assistant', sans-serif !important;
         border: none !important;
+        font-weight: bold !important;
         width: 100% !important;
-    }}
-    
-    /* יישור כותרות הטבלה */
-    th {{
-        text-align: right !important;
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# טיפול בלוגואים (שימוש בשם המדויק מה-GitHub שלך)
+# טיפול בלוגואים
 logo2_name = urllib.parse.quote("לוגו חדש (2).png")
 logo2_url = f"https://raw.githubusercontent.com/sapirbashari/My-inventory-app/main/{logo2_name}"
 
@@ -73,11 +74,11 @@ df = conn.read()
 
 st.write("---")
 
-# שורת חיפוש מיושרת לימין
-st.markdown(f"<b style='color: {color_orange};'>🔍 חיפוש פריט במחסן</b>", unsafe_allow_html=True)
-search = st.text_input("", placeholder="הזיני שם פריט, מדף...", label_visibility="collapsed")
+# שורת חיפוש - זכוכית מגדלת באפור כהה ויישור לימין
+st.markdown(f"<div style='text-align: right;'><b style='color: {color_dark_grey};'>🔍 חיפוש פריט במחסן</b></div>", unsafe_allow_html=True)
+search = st.text_input("", placeholder="הקלידי כאן לחיפוש...", label_visibility="collapsed")
 
-# טופס הוספה (הפלוס עכשיו כתום)
+# טופס הוספה - פלוס כתום
 with st.expander("➕ הוספת פריט חדש", expanded=False):
     with st.form("add_form", clear_on_submit=True):
         st.markdown("<b>שם הפריט</b>", unsafe_allow_html=True)
