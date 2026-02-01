@@ -1,56 +1,49 @@
-
 import streamlit as st
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
-# הגדרות דף
+# הגדרות דף ועיצוב
 st.set_page_config(page_title="ניהול מלאי", layout="wide")
 
-# תצוגת לוגואים בפינות העליונות
-col_logo1, col_title, col_logo2 = st.columns([1, 2, 1])
+# תצוגת לוגואים בפינות (כפי שביקשת בעיצוב)
+col_l, col_m, col_r = st.columns([1, 2, 1])
+with col_l:
+    st.image("https://raw.githubusercontent.com/sapirbashari/My-inventory-app/main/logo1.png", width=120)
+with col_m:
+    st.markdown("<h1 style='text-align: center; color: #4A2B1F;'>ניהול מלאי</h1>", unsafe_allow_html=True)
+with col_r:
+    st.image("https://raw.githubusercontent.com/sapirbashari/My-inventory-app/main/logo2.png", width=120)
 
-with col_logo1:
-    # לוגו 1 - כתום
-    st.image("https://raw.githubusercontent.com/sapirbashari/My-inventory-app/main/logo1.png", width=100)
+# חיבור ל-Google Sheets (סנכרון נתונים בזמן אמת)
+conn = st.connection("gsheets", type=GSheetsConnection)
+df = conn.read()
 
-with col_title:
-    st.markdown("<h1 style='text-align: center; color: #D35400;'>ניהול מלאי</h1>", unsafe_allow_html=True)
-
-with col_logo2:
-    # לוגו 2 - "ירוק"
-    st.image("https://raw.githubusercontent.com/sapirbashari/My-inventory-app/main/logo2.png", width=100)
-
-# אתחול בסיס נתונים בזיכרון
-if 'inventory' not in st.session_state:
-    st.session_state.inventory = pd.DataFrame(columns=['שם פריט', 'מדף', 'מעבר', 'קומה'])
+# --- אזור חיפוש (מופיע למעלה לפי העיצוב) ---
+st.write("### חיפוש פריט")
+search_query = st.text_input("הקלד שם פריט, מדף, מעבר או קומה:", placeholder="חיפוש...")
 
 # --- אזור הוספת פריט ---
-with st.expander("➕ הוספת פריט חדש", expanded=False):
-    with st.form("add_form", clear_on_submit=True):
-        name = st.text_input("שם הפריט")
-        col1, col2, col3 = st.columns(3)
-        shelf = col1.text_input("מדף (אות)")
-        aisle = col2.number_input("מעבר (מספר)", min_value=1, step=1)
-        floor = col3.number_input("קומה (מספר)", min_value=1, step=1)
-        
-        if st.form_submit_button("שמור במערכת"):
-            new_data = pd.DataFrame([[name, shelf, aisle, floor]], 
-                                    columns=['שם פריט', 'מדף', 'מעבר', 'קומה'])
-            st.session_state.inventory = pd.concat([st.session_state.inventory, new_data], ignore_index=True)
-            st.success(f"הפריט {name} נוסף למיקום: מדף {shelf}, מעבר {aisle}, קומה {floor}")
+with st.container():
+    st.write("---")
+    st.write("### הוספת פריט חדש")
+    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+    new_name = c1.text_input("שם פריט")
+    new_shelf = c2.text_input("מדף (A-Z)")
+    new_aisle = c3.text_input("מעבר (מספר)")
+    new_floor = c4.text_input("קומה (מספר)")
+    
+    if st.button("Commit changes (שמור)"):
+        if new_name:
+            new_row = pd.DataFrame([{"שם פריט": new_name, "מדף": new_shelf, "מעבר": new_aisle, "קומה": new_floor}])
+            updated_df = pd.concat([df, new_row], ignore_index=True)
+            conn.update(data=updated_df)
+            st.success("הנתונים נשמרו וסונכרנו!")
+            st.rerun()
 
-# --- אזור חיפוש ---
+# סינון נתונים והצגה
+if search_query:
+    df = df[df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
+
 st.write("---")
-search_term = st.text_input("🔍 חיפוש מהיר (לפי שם, מדף, מעבר או קומה):")
-
-# סינון הנתונים לפי החיפוש
-df = st.session_state.inventory
-if search_term:
-    mask = df.astype(str).apply(lambda x: x.str.contains(search_term, case=False)).any(axis=1)
-    display_df = df[mask]
-else:
-    display_df = df
-
-# הצגת הטבלה
-st.write("### רשימת מלאי מעודכנת")
-st.dataframe(display_df, use_container_width=True)
-
+st.write("### רשימת המלאי")
+st.dataframe(df, use_container_width=True, hide_index=True)
