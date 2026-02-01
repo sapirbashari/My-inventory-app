@@ -3,9 +3,10 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 import urllib.parse
 
-# הגדרות דף ועיצוב
+# הגדרות דף
 st.set_page_config(page_title="נוימן אלומיניום", layout="centered")
 
+# עיצוב CSS ליישור ימין מוחלט
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700&display=swap');
@@ -27,14 +28,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# חיבור
+# חיבור לגליון
 conn = st.connection("gsheets", type=GSheetsConnection)
-
-try:
-    df = conn.read()
-except Exception:
-    st.error("האפליקציה לא מצליחה להתחבר לגליון. ודאי שה-Secrets הוגדרו נכון (type = 'lib').")
-    st.stop()
+df = conn.read()
 
 # לוגואים
 logo2_url = f"https://raw.githubusercontent.com/sapirbashari/My-inventory-app/main/{urllib.parse.quote('לוגו חדש (2).png')}"
@@ -47,23 +43,22 @@ with col3: st.image(logo2_url, width=110)
 
 st.write("---")
 
-# חיפוש (זכוכית מגדלת באפור כהה)
+# חיפוש
 st.markdown("<div style='color: #333333; font-weight: bold;'>🔍 חיפוש פריט</div>", unsafe_allow_html=True)
-c_s1, c_s2 = st.columns(2)
-with c_s1:
-    search_name = st.selectbox("בחרי פריט מהמלאי", ["הכל"] + sorted(df['שם פריט'].astype(str).unique().tolist()), key="search_list")
-with c_s2:
-    search_free = st.text_input("חיפוש חופשי (למשל: מדף א')", key="search_free_text")
+search_query = st.text_input("הקלידי כאן לחיפוש (שם, מדף או מיקום)", key="search_input_main")
 
-# הוספה (פתוח לכל סוגי התווים)
+filtered_df = df.copy()
+if search_query:
+    filtered_df = filtered_df[filtered_df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
+
+# הוספה - שם פריט ללא הגבלה
 with st.expander("➕ הוספת פריט חדש", expanded=False):
-    with st.form("add_form_final", clear_on_submit=True):
-        # שם הפריט - פתוח להכל (אותיות, מספרים, סימנים)
-        n_name = st.text_input("שם הפריט", key="item_name_input")
+    with st.form("new_item_form", clear_on_submit=True):
+        n_name = st.text_input("שם הפריט (אותיות, מספרים וסימנים)", key="f_name")
         c1, c2, c3 = st.columns(3)
-        with c1: n_shelf = st.text_input("מדף", key="shelf_input")
-        with c2: n_aisle = st.number_input("מעבר", step=1, format="%d", key="aisle_input")
-        with c3: n_floor = st.number_input("קומה", step=1, format="%d", key="floor_input")
+        with c1: n_shelf = st.text_input("מדף", key="f_shelf")
+        with c2: n_aisle = st.number_input("מעבר", step=1, format="%d", key="f_aisle")
+        with c3: n_floor = st.number_input("קומה", step=1, format="%d", key="f_floor")
         
         if st.form_submit_button("שמור במערכת"):
             if n_name:
@@ -71,16 +66,9 @@ with st.expander("➕ הוספת פריט חדש", expanded=False):
                 updated_df = pd.concat([df, new_row], ignore_index=True)
                 try:
                     conn.update(data=updated_df)
-                    st.success(f"הפריט '{n_name}' נשמר!")
+                    st.success(f"הפריט '{n_name}' נשמר בהצלחה!")
                     st.rerun()
                 except Exception as e:
-                    st.error(f"שגיאת הרשאה. ודאי שהגליון מוגדר כ-Editor. פירוט: {e}")
-
-# סינון והצגה
-filtered_df = df.copy()
-if search_name != "הכל":
-    filtered_df = filtered_df[filtered_df['שם פריט'] == search_name]
-if search_free:
-    filtered_df = filtered_df[filtered_df.astype(str).apply(lambda x: x.str.contains(search_free, case=False)).any(axis=1)]
+                    st.error("שגיאה בשמירה. ודאי שה-Secrets מוגדרים בדיוק לפי ההוראות.")
 
 st.dataframe(filtered_df, use_container_width=True, hide_index=True)
